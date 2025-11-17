@@ -1,0 +1,26 @@
+import { BrowserRouter, Routes, Route } from "react-router";
+
+import Home from './pages/Home';
+import Login from "./pages/Login";
+import Perfil from "./pages/Perfil";
+import Equipo from "./pages/Equipo";
+import Rooms from "./pages/Rooms";
+
+function App() {
+  
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/Perfil" element={<Perfil />} />
+        <Route path="/Equipo" element={<Equipo />} />
+        <Route path="/Rooms" element={<Rooms />} />
+        
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App
