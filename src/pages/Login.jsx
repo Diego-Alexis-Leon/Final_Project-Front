@@ -1,16 +1,67 @@
 import { useNavigate, Link } from "react-router";
 
 export default function Login() {
-  
-
   return (
-    <form style={{ textAlign: "center", marginTop: "4rem" }}>
-      <h1>
-        Pagina : Login
-      </h1>
-        {/*EN EL MAIN*/}
-      <p>Ir a <Link to= "/">Home</Link></p>
+    <div className="relative">
+
+      {/*Universidad Panamericana */}
+      <div className="absolute top-0 left-0 flex items-center gap-3 m-4">
       
-    </form>
+        <h2 className="text-left">
+          UNIVERSIDAD PANAMERICANA<br />ESCUELA DE COMUNICACIÓN
+        </h2>
+      </div>
+
+      <form className="pt-32">
+
+        {/*El cuadrado de Login*/}
+        <div className="mx-auto mt-10 p-10 w-[500px] bg-gray-100 rounded-2xl shadow-md">
+          <h1 className="text-4xl tracking-widest text-center mb-10">LOGIN</h1>
+
+          <div className="flex flex-col gap-8">
+
+
+            <div>
+              <label className="block bg-gray-300 px-4 py-2 w-fit tracking-widest text-sm">
+                USERNAME
+              </label>
+              <input
+                type="text"
+                className="w-full bg-gray-200 mt-2 p-3 rounded shadow-sm outline-none"
+              />
+            </div>
+
+
+            <div>
+              <label className="block bg-gray-300 px-4 py-2 w-fit tracking-widest text-sm">
+                PASSWORD
+              </label>
+              <input
+                type="password"
+                className="w-full bg-gray-200 mt-2 p-3 rounded shadow-sm outline-none"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/*Los dos botones de abajo*/}
+        <div className="flex gap-6 justify-center mt-10">
+          <label className="block bg-[#8A1538] px-8 py-6 w-fit tracking-widest text-sm rounded-2xl text-white">
+            <Link to="/">SOY ADMIN</Link>
+          </label>
+
+          <label className="block bg-[#8A1538] px-8 py-6 w-fit tracking-widest text-sm rounded-2xl text-white">
+            <Link to="/">SOY ALUMNO</Link>
+          </label>
+        </div>
+
+        {/*
+        <p className="text-center mt-24">
+          Ir a <Link to="/">Home</Link>
+        </p>
+*/}
+      </form>
+    </div>
   );
 }

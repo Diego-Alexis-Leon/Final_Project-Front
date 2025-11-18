@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router";
+import { NavigationProvider } from "./context/NavigationContext";
 
 import Home from './pages/Home';
 import Login from "./pages/Login";
@@ -10,7 +11,9 @@ function App() {
   
 
   return (
+     
     <BrowserRouter>
+    <NavigationProvider>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -19,7 +22,9 @@ function App() {
         <Route path="/Rooms" element={<Rooms />} />
         
       </Routes>
+      </NavigationProvider>
     </BrowserRouter>
+     
   )
 }
 
