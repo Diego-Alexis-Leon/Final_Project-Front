@@ -1,16 +1,23 @@
 import { Link } from "react-router";
 
-export default function Perfil (){
-    return(
+
+import Header from "../Components/Header";
+import ReturnButton from "../Components/ReturnButton";
+
+export default function Perfil() {
+    return (
         <div style={{ textAlign: "center", marginTop: "4rem" }}>
+            <Header />
+
+            {/*EN EL MAIN*/}
+            <div style={{ textAlign: "center", marginTop: "6rem" }}>
+            <ReturnButton/>
             <h1>
                 Pagina: Perfil
             </h1>
-            {/*EN EL HEADEDR*/}
-            <p>Regresar <Link to= "/Login">Login</Link></p>
-
-            {/*EN EL MAIN*/}
+            
             <p>Regresar a <Link to="/">Home</Link></p>
+            </div>
         </div>
     )
 }
