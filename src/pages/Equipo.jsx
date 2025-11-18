@@ -1,18 +1,20 @@
 import { Link } from "react-router";
 
+import Header from "../Components/Header";
+import ReturnButton from "../Components/ReturnButton";
+
 export default function Equipo() {
   return (
     <div style={{ textAlign: "center", marginTop: "4rem" }}>
+      
+      <Header />
+
+      <div style={{ textAlign: "center", marginTop: "6rem" }}>
+      <ReturnButton />
       <h1>
         Pagina : Equipo
-    </h1>
-        {/*EN EL HEADEDR*/}
-        <p>Ir a <Link to= "/Perfil">Perfil</Link></p>
-        <p>Regresar <Link to= "/Login">Login</Link></p>
-
-        {/*EN EL MAIN*/}
-        <p>Ir a <Link to= "/">Home</Link></p>
-        
+      </h1>
+      </div>
     </div>
   );
 }
