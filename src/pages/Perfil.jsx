@@ -16,7 +16,7 @@ export default function Perfil() {
                 Pagina: Perfil
             </h1>
             
-            <p>Regresar a <Link to="/">Home</Link></p>
+            <p>Regresar a <Link to="/Home">Home</Link></p>
             </div>
         </div>
     )

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import { NavigationProvider } from "./context/NavigationContext";
+import { AuthProvider } from "./context/AuthContext"
 
 import Home from './pages/Home';
 import Login from "./pages/Login";
@@ -15,8 +16,8 @@ function App() {
     <BrowserRouter>
     <NavigationProvider>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/Home" element={<Home />} />
+        <Route path="/" element={<Login />} />
         <Route path="/Perfil" element={<Perfil />} />
         <Route path="/Equipo" element={<Equipo />} />
         <Route path="/Rooms" element={<Rooms />} />
