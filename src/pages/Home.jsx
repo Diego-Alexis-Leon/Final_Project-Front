@@ -8,6 +8,9 @@ export default function Home() {
   // Estado para guardar el equipo
   const [equipment, setEquipment] = useState([]);
 
+  // Estado para guardar el equipo
+  const [rooms, setRooms] = useState([]);
+
   // Llamar al backend al cargar la página
   useEffect(() => {
     fetch("http://localhost:5000/api/equipment")
@@ -16,6 +19,11 @@ export default function Home() {
       .catch(err => console.log("Error al obtener equipo:", err));
   }, []);
 
+  useEffect(() => {
+    fetch("http://localhost:5000/api/rooms")
+      .then(res => res.json())
+      .then(data => setRooms(data));
+  }, []);
   return (
     <div style={{ textAlign: "center", marginTop: "4rem" }}>
 
@@ -32,7 +40,7 @@ export default function Home() {
 
         {/* LISTA DE EQUIPO AQUÍ DEBAJO */}
         <h2 style={{ marginTop: "3rem" }}>Equipo Disponible</h2>
-        
+
         <div style={{
           display: "flex",
           justifyContent: "center",
@@ -56,6 +64,25 @@ export default function Home() {
           ))}
         </div>
 
+        {/* LISTA DE CUARTOS AQUÍ DEBAJO */}
+        <h2 style={{ marginTop: "3rem" }}>Cuartos Disponibles</h2>
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          marginTop: "1rem",
+          gap: "20px"
+        }}>
+          {rooms.map(room => (
+            <div key={room._id} className="p-4 border rounded">
+              <h2>{room.name}</h2>
+              <p>Capacidad: {room.capacity}</p>
+              <p style={{ color: room.available ? "green" : "red" }}>
+                {room.available ? "Disponible" : "Ocupado"}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
