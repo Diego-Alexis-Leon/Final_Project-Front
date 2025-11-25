@@ -12,7 +12,7 @@ export default function Header() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                backgroundColor: "#660000", // rojo oscuro
+                backgroundColor: "#8A1538", // rojo oscuro
                 position: "fixed",
                 top: 0,
                 left: 0,
@@ -30,7 +30,7 @@ export default function Header() {
                     <button
                         style={{
                             padding: "0.5rem 1rem",
-                            backgroundColor: "#e0e0e0", // gris claro
+                            backgroundColor: "gray-100", // gris claro "#e0e0e0"
                             border: "none",
                             borderRadius: "10px",
                             cursor: "pointer",

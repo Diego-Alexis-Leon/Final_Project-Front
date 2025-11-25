@@ -20,7 +20,6 @@ function App() {
         <Route path="/Perfil" element={<Perfil />} />
         <Route path="/Equipo" element={<Equipo />} />
         <Route path="/Rooms" element={<Rooms />} />
-        
       </Routes>
       </NavigationProvider>
     </BrowserRouter>
