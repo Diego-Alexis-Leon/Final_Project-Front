@@ -1,41 +1,77 @@
 import express from "express";
 import Reservation from "../models/Reservation.js";
+import Equipment from "../models/Equipment.js";
+import Room from "../models/Rooms.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Crear reserva
 router.post("/", verifyToken, async (req, res) => {
   try {
-    const { resourceType, resourceId, startDate, endDate } = req.body;
+    const { resourceType, resourceId, startDate, endDate, day, startHour, endHour } = req.body;
 
-    // Revisar si ya está reservado en esas fechas
-    const overlapping = await Reservation.findOne({
-      resourceType,
-      resourceId,
-      status: "reserved",
-      $or: [
-        { startDate: { $lte: endDate }, endDate: { $gte: startDate } }
-      ]
-    });
+    // Validar que el recurso existe
+    let resource = null;
 
-    if (overlapping) {
-        
-      return res.status(400).json({ msg: "El recurso ya está reservado en esas fechas" });
+    if (resourceType === "room") {
+      resource = await Room.findById(resourceId);
+    } else {
+      resource = await Equipment.findById(resourceId);
     }
 
+    if (!resource) {
+      return res.status(404).json({ msg: "Recurso no encontrado" });
+    }
+
+    // 🔎 Detectar solapamientos
+    let overlapping;
+
+    if (resourceType === "room") {
+      overlapping = await Reservation.findOne({
+        resourceType,
+        resourceId,
+        day,
+        status: "approved",
+        $or: [
+          { startHour: { $lt: endHour }, endHour: { $gt: startHour } }
+        ]
+      });
+    } else {
+      overlapping = await Reservation.findOne({
+        resourceType,
+        resourceId,
+        status: "approved",
+        $or: [
+          { startDate: { $lte: endDate }, endDate: { $gte: startDate } }
+        ]
+      });
+    }
+
+    if (overlapping) {
+      return res.status(400).json({ msg: "El recurso ya está reservado en ese horario" });
+    }
+
+    // Crear la reserva
     const reservation = await Reservation.create({
       user: req.user.id,
       resourceType,
       resourceId,
       startDate,
-      endDate
+      endDate,
+      day,
+      startHour,
+      endHour,
+      status: "approved" // por ahora aprobadas automáticamente
     });
 
     res.json(reservation);
+
   } catch (error) {
-    console.error("⚠️ ERROR AL CREAR RESERVA (/):", error);
-    res.status(500).json({ error: "Error al crear reserva" });
+    console.error("⚠️ ERROR AL CREAR RESERVA (/):", error, {
+  body: req.body,
+  user: req.user
+});
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -48,25 +84,8 @@ router.get("/my", verifyToken, async (req, res) => {
 
     res.json(reservations);
   } catch (error) {
-    console.error("⚠️ ERROR AL CREAR RESERVA (/my):", error);
-    res.status(500).json({ error: "Error al obtener reservas" });
-  }
-});
-
-router.get("/resource/:type/:id", async (req, res) => {
-  try {
-    const { type, id } = req.params;
-
-    const reservations = await Reservation.find({
-      resourceType: type,
-      resourceId: id,
-      status: "reserved"
-    }).sort({ startDate: 1 });
-
-    res.json(reservations);
-  } catch (error) {
-    console.error("⚠️ ERROR AL CREAR RESERVA (/resourse):", error);
-    res.status(500).json({ error: "Error al obtener disponibilidad" });
+    console.error("⚠️ ERROR AL OBTENER RESERVAS (/my):", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

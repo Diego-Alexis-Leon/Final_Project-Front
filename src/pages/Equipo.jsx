@@ -1,6 +1,7 @@
 // src/pages/Equipo.jsx
 import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
+import axios from "axios";
 
 function TeamCard({ team, selected, disabledAdd, onToggle }) {
   return (
@@ -218,8 +219,8 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
   const filterOptions = ["Cámara", "Luz", "Micrófono", "Altavoz"];
 
   const handleFilterToggle = (filter) => {
-    onFilterChange(prev => 
-      prev.includes(filter) 
+    onFilterChange(prev =>
+      prev.includes(filter)
         ? prev.filter(f => f !== filter)
         : [...prev, filter]
     );
@@ -241,14 +242,14 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
           </label>
         ))}
       </div>
-      <button 
+      <button
         onClick={onApplyFilter}
         className="mt-4 w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d] transition-colors"
       >
         Aplicar filtro
       </button>
       {filters.length > 0 && (
-        <button 
+        <button
           onClick={() => onFilterChange([])}
           className="mt-2 w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2 hover:bg-[#7a0d26]/5 transition-colors"
         >
@@ -293,7 +294,7 @@ export default function Equipo() {
     if (!isFilterApplied || activeFilters.length === 0) {
       return teams;
     }
-    return teams.filter(team => 
+    return teams.filter(team =>
       team.type && activeFilters.includes(team.type)
     );
   }, [teams, activeFilters, isFilterApplied]);
@@ -336,19 +337,45 @@ export default function Equipo() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
-      // Aquí podrías hacer un POST real al backend si quieres
-      // await fetch("http://localhost:5000/api/solicitudes", { ... })
 
-      await new Promise((r) => setTimeout(r, 800)); // simulación
-      alert(`Solicitud enviada!\nEquipos: ${selectedIds.join(", ")}`);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Debes iniciar sesión para reservar.");
+        return;
+      }
+
+      // Crear una reserva por cada equipo seleccionado
+      for (const equipmentId of selectedIds) {
+        const team = selectedTeams.find(t => t.id === equipmentId);
+
+        await axios.post(
+          "http://localhost:5000/api/reservations",
+          {
+            resourceType: team.type,     // ← ENVÍA camera, light, microphone, speaker
+            resourceId: equipmentId,
+            starDate: "11/26/2025",
+            endDate: "11/27/2025"
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+
+      alert("¡Reservas creadas exitosamente!");
+
       setRequestOpen(false);
-    } catch (e) {
-      console.error(e);
-      alert("Hubo un error al enviar la solicitud.");
+      setSelectedIds([]); // limpia selección
+    } catch (error) {
+      console.error("Error creando reservas:", error);
+      alert("Hubo un error y no se pudieron crear las reservas.");
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -365,7 +392,7 @@ export default function Equipo() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="hidden md:block">
-          <FilterSection 
+          <FilterSection
             filters={activeFilters}
             onFilterChange={handleFilterChange}
             onApplyFilter={handleApplyFilter}
@@ -375,13 +402,13 @@ export default function Equipo() {
         <main>
           <div>
             <ReturnButton />
-            
+
             {/* Indicador de filtros activos */}
             {isFilterApplied && activeFilters.length > 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
                   Mostrando equipos de tipo: <strong>{activeFilters.join(", ")}</strong>
-                  <button 
+                  <button
                     onClick={() => {
                       setActiveFilters([]);
                       setIsFilterApplied(false);
@@ -410,7 +437,7 @@ export default function Equipo() {
             {isFilterApplied && filteredTeams.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-neutral-500">No se encontraron equipos con los filtros seleccionados.</p>
-                <button 
+                <button
                   onClick={() => {
                     setActiveFilters([]);
                     setIsFilterApplied(false);
