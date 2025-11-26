@@ -1,5 +1,5 @@
 // src/pages/Equipo.jsx
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
 
 function TeamCard({ team, selected, disabledAdd, onToggle }) {
@@ -19,9 +19,22 @@ function TeamCard({ team, selected, disabledAdd, onToggle }) {
             <div className="inline-block px-3 py-1 rounded-md bg-white/80 text-[#7a0d26] font-semibold tracking-wide">
               {team.name}
             </div>
-            <div className="mt-3 space-y-1 text-sm text-neutral-600">
-              <div className="h-3 w-40 bg-white/70 rounded" />
-              <div className="h-3 w-48 bg-white/70 rounded" />
+
+            {/* Info real del backend */}
+            <div className="mt-3 space-y-1 text-sm text-neutral-700">
+              {team.type && (
+                <p>
+                  <span className="font-medium">Tipo:</span> {team.type}
+                </p>
+              )}
+              {"available" in team && (
+                <p>
+                  <span className="font-medium">Estado:</span>{" "}
+                  <span className={team.available ? "text-green-700" : "text-red-700"}>
+                    {team.available ? "Disponible" : "No disponible"}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -76,7 +89,19 @@ function SelectionPreviewModal({ open, onClose, selectedTeams, onSendRequest }) 
                   <div className="px-2 py-1 inline-block rounded bg-white text-[#7a0d26] font-medium">
                     {team.name}
                   </div>
-                  <div className="mt-2 h-3 w-40 bg-white/70 rounded" />
+                  {team.type && (
+                    <p className="mt-2 text-sm text-neutral-700">
+                      <span className="font-medium">Tipo:</span> {team.type}
+                    </p>
+                  )}
+                  {"available" in team && (
+                    <p className="text-sm text-neutral-700">
+                      <span className="font-medium">Estado:</span>{" "}
+                      <span className={team.available ? "text-green-700" : "text-red-700"}>
+                        {team.available ? "Disponible" : "No disponible"}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -191,13 +216,26 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
 export default function Equipo() {
   const maxSelection = 6;
 
+  // ✅ Equipos desde el backend
+  const [equipment, setEquipment] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/equipment")
+      .then((res) => res.json())
+      .then((data) => setEquipment(data))
+      .catch((err) => console.error("Error al obtener equipo:", err));
+  }, []);
+
+  // Adaptamos los datos del backend a la estructura usada en la UI
   const teams = useMemo(
     () =>
-      Array.from({ length: 6 }).map((_, i) => ({
-        id: String(i + 1),
-        name: `EQUIPO ${i + 1}`,
+      equipment.map((item) => ({
+        id: item._id,          // usamos _id como id interno
+        name: item.name,
+        type: item.type,
+        available: item.available,
       })),
-    []
+    [equipment]
   );
 
   const [selectedIds, setSelectedIds] = useState([]);
@@ -207,6 +245,7 @@ export default function Equipo() {
 
   const isSelected = useCallback((id) => selectedIds.includes(id), [selectedIds]);
   const canAddMore = selectedIds.length < maxSelection;
+
   const toggle = (id) => {
     setSelectedIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
@@ -225,6 +264,9 @@ export default function Equipo() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
+      // Aquí podrías hacer un POST real al backend si quieres
+      // await fetch("http://localhost:5000/api/solicitudes", { ... })
+
       await new Promise((r) => setTimeout(r, 800)); // simulación
       alert(`Solicitud enviada!\nEquipos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);

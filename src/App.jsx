@@ -14,6 +14,7 @@ function App() {
   return (
      
     <BrowserRouter>
+    <AuthProvider>
     <NavigationProvider>
       <Routes>
         <Route path="/Home" element={<Home />} />
@@ -23,9 +24,10 @@ function App() {
         <Route path="/Rooms" element={<Rooms />} />
       </Routes>
       </NavigationProvider>
+      </AuthProvider>
     </BrowserRouter>
      
   )
 }
 
-export default App
+export default App
