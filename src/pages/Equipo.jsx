@@ -1,5 +1,6 @@
 // src/pages/Equipo.jsx
 import { useMemo, useState, useCallback, useEffect } from "react";
+import { useAuth } from "../context/AuthContext.jsx"; 
 import ReturnButton from "../Components/ReturnButton";
 
 function TeamCard({ team, selected, disabledAdd, onToggle }) {
@@ -20,7 +21,6 @@ function TeamCard({ team, selected, disabledAdd, onToggle }) {
               {team.name}
             </div>
 
-            {/* Info real del backend */}
             <div className="mt-3 space-y-1 text-sm text-neutral-700">
               {team.type && (
                 <p>
@@ -213,13 +213,12 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
   );
 }
 
-// Componente de filtros
 function FilterSection({ filters, onFilterChange, onApplyFilter }) {
   const filterOptions = ["Cámara", "Luz", "Micrófono", "Altavoz"];
 
   const handleFilterToggle = (filter) => {
-    onFilterChange(prev => 
-      prev.includes(filter) 
+    onFilterChange(prev =>
+      prev.includes(filter)
         ? prev.filter(f => f !== filter)
         : [...prev, filter]
     );
@@ -241,14 +240,14 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
           </label>
         ))}
       </div>
-      <button 
+      <button
         onClick={onApplyFilter}
         className="mt-4 w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d] transition-colors"
       >
         Aplicar filtro
       </button>
       {filters.length > 0 && (
-        <button 
+        <button
           onClick={() => onFilterChange([])}
           className="mt-2 w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2 hover:bg-[#7a0d26]/5 transition-colors"
         >
@@ -260,14 +259,13 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
 }
 
 export default function Equipo() {
+  const { role } = useAuth();  // ⬅️ AQUI SE ARREGLÓ
   const maxSelection = 6;
 
-  // Equipos desde el backend
   const [equipment, setEquipment] = useState([]);
 
   const [activeFilters, setActiveFilters] = useState([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
-
 
   useEffect(() => {
     fetch("http://localhost:5000/api/equipment")
@@ -276,11 +274,10 @@ export default function Equipo() {
       .catch((err) => console.error("Error al obtener equipo:", err));
   }, []);
 
-  // Adaptamos los datos del backend a la estructura usada en la UI
   const teams = useMemo(
     () =>
       equipment.map((item) => ({
-        id: item._id,          // usamos _id como id interno
+        id: item._id,
         name: item.name,
         type: item.type,
         available: item.available,
@@ -288,12 +285,11 @@ export default function Equipo() {
     [equipment]
   );
 
-  // Filtrar equipos según los filtros activos
   const filteredTeams = useMemo(() => {
     if (!isFilterApplied || activeFilters.length === 0) {
       return teams;
     }
-    return teams.filter(team => 
+    return teams.filter(team =>
       team.type && activeFilters.includes(team.type)
     );
   }, [teams, activeFilters, isFilterApplied]);
@@ -322,7 +318,6 @@ export default function Equipo() {
 
   const handleFilterChange = (newFilters) => {
     setActiveFilters(newFilters);
-    // Si se limpian los filtros, también quitamos el filtro aplicado
     if (newFilters.length === 0) {
       setIsFilterApplied(false);
     }
@@ -336,10 +331,9 @@ export default function Equipo() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
-      // Aquí podrías hacer un POST real al backend si quieres
-      // await fetch("http://localhost:5000/api/solicitudes", { ... })
 
-      await new Promise((r) => setTimeout(r, 800)); // simulación
+      await new Promise((r) => setTimeout(r, 800));
+
       alert(`Solicitud enviada!\nEquipos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);
     } catch (e) {
@@ -365,7 +359,7 @@ export default function Equipo() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="hidden md:block">
-          <FilterSection 
+          <FilterSection
             filters={activeFilters}
             onFilterChange={handleFilterChange}
             onApplyFilter={handleApplyFilter}
@@ -375,13 +369,12 @@ export default function Equipo() {
         <main>
           <div>
             <ReturnButton />
-            
-            {/* Indicador de filtros activos */}
+
             {isFilterApplied && activeFilters.length > 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
                   Mostrando equipos de tipo: <strong>{activeFilters.join(", ")}</strong>
-                  <button 
+                  <button
                     onClick={() => {
                       setActiveFilters([]);
                       setIsFilterApplied(false);
@@ -391,6 +384,18 @@ export default function Equipo() {
                     (mostrar todos)
                   </button>
                 </p>
+              </div>
+            )}
+
+            {/* BOTÓN SOLO PARA ADMIN */}
+            {role === "admin" && (
+              <div className="mb-6">
+                <button
+                  onClick={() => console.log("Agregar nuevo cuarto")}
+                  className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d]"
+                >
+                  ➕ Agregar nuevo cuarto
+                </button>
               </div>
             )}
 
@@ -406,11 +411,10 @@ export default function Equipo() {
               ))}
             </div>
 
-            {/* Mensaje cuando no hay resultados */}
             {isFilterApplied && filteredTeams.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-neutral-500">No se encontraron equipos con los filtros seleccionados.</p>
-                <button 
+                <button
                   onClick={() => {
                     setActiveFilters([]);
                     setIsFilterApplied(false);
