@@ -12,6 +12,8 @@ export default function Login() {
     login(); // Esto viene del AuthContext
   };
 
+  
+
   return (
     <div className="relative">
 

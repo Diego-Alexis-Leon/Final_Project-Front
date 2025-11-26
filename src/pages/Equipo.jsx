@@ -262,7 +262,7 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
 export default function Equipo() {
   const maxSelection = 6;
 
-  // ✅ Equipos desde el backend
+  // Equipos desde el backend
   const [equipment, setEquipment] = useState([]);
 
   const [activeFilters, setActiveFilters] = useState([]);
