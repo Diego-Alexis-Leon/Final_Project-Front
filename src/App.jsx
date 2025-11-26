@@ -19,9 +19,11 @@ function App() {
         <Route path="/Equipo" element={<Equipo />} />
         <Route path="/Rooms" element={<Rooms />} />
       </Routes>
+
     </NavigationProvider>
 
   )
 }
 
 export default App
+

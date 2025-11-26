@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BrowserRouter } from "react-router-dom"; // ← Agregar esto
 //import { AuthProvider } from "./context/AuthContext";
 
+
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from "./context/AuthContext";
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <App />
         </AuthProvider>
       </BrowserRouter>
+
     </GoogleOAuthProvider>
     
   </React.StrictMode>

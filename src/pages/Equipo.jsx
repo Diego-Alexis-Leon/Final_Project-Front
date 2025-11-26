@@ -264,8 +264,10 @@ export default function Equipo() {
 
   // ✅ Equipos desde el backend
   const [equipment, setEquipment] = useState([]);
+
   const [activeFilters, setActiveFilters] = useState([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+
 
   useEffect(() => {
     fetch("http://localhost:5000/api/equipment")

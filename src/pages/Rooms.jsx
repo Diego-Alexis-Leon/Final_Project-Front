@@ -1,4 +1,7 @@
 // src/pages/Rooms.jsx
+
+// type en la linea 283
+
 import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
 
@@ -271,8 +274,10 @@ export default function Rooms() {
 
   // ✅ Rooms desde el backend
   const [roomsData, setRoomsData] = useState([]);
+
   const [capacityFilter, setCapacityFilter] = useState("");
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+
 
   useEffect(() => {
     fetch("http://localhost:5000/api/rooms")
@@ -350,15 +355,36 @@ export default function Rooms() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
+
+      const token = localStorage.getItem("token");
       // Aquí podrías hacer un POST real al backend
       // await fetch("http://localhost:5000/api/room-requests", { ... })
 
-      await new Promise((r) => setTimeout(r, 800)); // mock
+      // Enviar al backend cada cuarto seleccionado
+    for (const roomId of selectedIds) {
+      await fetch("http://localhost:5000/api/reservations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          resourceType: "room", 
+          resourceId: roomId,
+          day: "2025-11-26", // <- luego lo cambias por el date picker
+          startHour: "14:00",
+          endHour: "16:00",
+        }),
+      });
+    }
+
       alert(`Solicitud enviada!\nCuartos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);
     } catch (e) {
       console.error(e);
-      alert("Hubo un error al enviar la solicitud.");
+
+      alert("Hubo un error al enviar la solicitud de reserva de cuarto.");
+
     } finally {
       setSending(false);
     }
@@ -379,17 +405,32 @@ export default function Rooms() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="hidden md:block">
+
+          <div className="rounded-lg bg-[#7a0d26]/10 p-4 border border-[#7a0d26]/20">
+            <h3 className="font-semibold text-[#7a0d26]">Filtros</h3>
+            <div className="mt-3 space-y-2">
+              <div className="h-3 w-40 bg-white rounded" />
+              <div className="h-3 w-36 bg-white rounded" />
+              <div className="h-3 w-44 bg-white rounded" />
+              <button className="mt-4 w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d]">
+                Aplicar filtro
+              </button>
+            </div>
+          </div>
+
           <CapacityFilterSection 
             capacityFilter={capacityFilter}
             onCapacityFilterChange={handleCapacityFilterChange}
             onApplyFilter={handleApplyFilter}
             onClearFilter={handleClearFilter}
           />
+
         </aside>
 
         <main>
           <div>
             <ReturnButton />
+
             
             {/* Indicador de filtro activo */}
             {isFilterApplied && capacityFilter && (
@@ -408,6 +449,7 @@ export default function Rooms() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {filteredRooms.map((room) => (
+
                 <RoomCard
                   key={room.id}
                   room={room}
@@ -417,6 +459,7 @@ export default function Rooms() {
                 />
               ))}
             </div>
+
 
             {/* Mensaje cuando no hay resultados */}
             {isFilterApplied && filteredRooms.length === 0 && (
@@ -432,6 +475,7 @@ export default function Rooms() {
                 </button>
               </div>
             )}
+
           </div>
         </main>
       </div>

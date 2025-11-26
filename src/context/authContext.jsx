@@ -14,11 +14,26 @@ export function AuthProvider({ children }) {
 
   const login = useGoogleLogin({
     onSuccess: async (res) => {
+      // 1. Pedimos datos del usuario a Google
       const info = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
         headers: { Authorization: `Bearer ${res.access_token}` },
       });
       const data = await info.json();
-      setUser(data);
+
+      const response = await fetch("http://localhost:5000/api/auth/google-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: data.name,
+        email: data.email,
+        googleId: data.sub,
+        role
+      })
+    });
+      const result = await response.json();
+
+      setUser(result.user);
+      localStorage.setItem("token", result.token);
       navigate("/Home");
     },
   });
