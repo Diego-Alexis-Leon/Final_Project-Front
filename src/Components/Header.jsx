@@ -26,7 +26,7 @@ export default function Header() {
             <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
                 
                 {/* Botón Logout estilizado */}
-                <Link to="/Login">
+                <Link to="/">
                     <button
                         style={{
                             padding: "0.5rem 1rem",

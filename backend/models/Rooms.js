@@ -6,7 +6,11 @@ const roomSchema = new mongoose.Schema(
     capacity: { type: Number, required: true },
     available: { type: Boolean, default: true },
     description: { type: String },
-    //price: { type: Number, required: true }
+    resourceType: {
+      type: String,
+      default: "room",
+      immutable: true  // ⭐ evita que se cambie accidentalmente
+    },
   },
   { timestamps: true }
 );

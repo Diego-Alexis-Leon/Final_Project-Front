@@ -1,4 +1,5 @@
 // src/pages/Rooms.jsx
+// type en la linea 283
 import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
 
@@ -264,15 +265,33 @@ export default function Rooms() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
+
+      const token = localStorage.getItem("token");
       // Aquí podrías hacer un POST real al backend
       // await fetch("http://localhost:5000/api/room-requests", { ... })
 
-      await new Promise((r) => setTimeout(r, 800)); // mock
+      // Enviar al backend cada cuarto seleccionado
+    for (const roomId of selectedIds) {
+      await fetch("http://localhost:5000/api/reservations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          resourceType: "room", 
+          resourceId: roomId,
+          day: "2025-11-26", // <- luego lo cambias por el date picker
+          startHour: "14:00",
+          endHour: "16:00",
+        }),
+      });
+    }
       alert(`Solicitud enviada!\nCuartos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);
     } catch (e) {
       console.error(e);
-      alert("Hubo un error al enviar la solicitud.");
+      alert("Hubo un error al enviar la solicitud de reserva de cuarto.");
     } finally {
       setSending(false);
     }

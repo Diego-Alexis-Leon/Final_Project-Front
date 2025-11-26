@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import authRoutes from "./routes/AuthRoutes.js";
 import equipmentRoutes from "./routes/EquipmentRoutes.js";
 import roomsRoutes from "./routes/RoomsRoutes.js"
+import reservationRoutes from "./routes/ReservationRoutes.js"
 import { verifyToken } from "./middleware/authMiddleware.js";
 
 dotenv.config();
@@ -22,6 +23,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/rooms", roomsRoutes);
+app.use("/api/reservations", reservationRoutes);
 
 app.get("/api/auth/profile", verifyToken, (req, res) => {
   res.json({ msg: "Acceso permitido", user: req.user });
