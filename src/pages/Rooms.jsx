@@ -1,5 +1,7 @@
 // src/pages/Rooms.jsx
+
 // type en la linea 283
+
 import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
 
@@ -214,11 +216,68 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
   );
 }
 
+// Componente de filtros por capacidad
+function CapacityFilterSection({ capacityFilter, onCapacityFilterChange, onApplyFilter, onClearFilter }) {
+  const handleCapacityChange = (e) => {
+    const value = e.target.value;
+    // Solo permitir números
+    if (value === '' || /^\d+$/.test(value)) {
+      onCapacityFilterChange(value);
+    }
+  };
+
+  return (
+    <div className="rounded-lg bg-[#7a0d26]/10 p-4 border border-[#7a0d26]/20">
+      <h3 className="font-semibold text-[#7a0d26] mb-4">Filtro por Capacidad</h3>
+      <div className="space-y-4">
+        <label className="block">
+          <span className="text-sm text-[#7a0d26] font-medium mb-2 block">Capacidad exacta</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={capacityFilter}
+            onChange={handleCapacityChange}
+            placeholder="Ej: 10"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+          />
+          <p className="text-xs text-neutral-500 mt-1">
+            Ingresa el número exacto de personas
+          </p>
+        </label>
+      </div>
+      
+      <div className="mt-4 space-y-2">
+        <button 
+          onClick={onApplyFilter}
+          disabled={!capacityFilter}
+          className="w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Aplicar filtro
+        </button>
+        
+        {capacityFilter && (
+          <button 
+            onClick={onClearFilter}
+            className="w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2 hover:bg-[#7a0d26]/5 transition-colors"
+          >
+            Limpiar filtro
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Rooms() {
   const maxSelection = 6;
 
   // ✅ Rooms desde el backend
   const [roomsData, setRoomsData] = useState([]);
+
+  const [capacityFilter, setCapacityFilter] = useState("");
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
+
 
   useEffect(() => {
     fetch("http://localhost:5000/api/rooms")
@@ -239,6 +298,18 @@ export default function Rooms() {
     [roomsData]
   );
 
+  // Filtrar rooms según la capacidad
+  const filteredRooms = useMemo(() => {
+    if (!isFilterApplied || !capacityFilter) {
+      return rooms;
+    }
+    
+    const targetCapacity = parseInt(capacityFilter);
+    return rooms.filter(room => 
+      room.capacity === targetCapacity
+    );
+  }, [rooms, capacityFilter, isFilterApplied]);
+
   const [selectedIds, setSelectedIds] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -256,6 +327,25 @@ export default function Rooms() {
   };
 
   const selectedRooms = rooms.filter((r) => selectedIds.includes(r.id));
+
+  const handleApplyFilter = () => {
+    if (capacityFilter) {
+      setIsFilterApplied(true);
+    }
+  };
+
+  const handleClearFilter = () => {
+    setCapacityFilter("");
+    setIsFilterApplied(false);
+  };
+
+  const handleCapacityFilterChange = (newCapacity) => {
+    setCapacityFilter(newCapacity);
+    // Si se limpia el campo, también quitamos el filtro aplicado
+    if (!newCapacity) {
+      setIsFilterApplied(false);
+    }
+  };
 
   const handleSendFromPreview = () => {
     setPreviewOpen(false);
@@ -287,11 +377,14 @@ export default function Rooms() {
         }),
       });
     }
+
       alert(`Solicitud enviada!\nCuartos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);
     } catch (e) {
       console.error(e);
+
       alert("Hubo un error al enviar la solicitud de reserva de cuarto.");
+
     } finally {
       setSending(false);
     }
@@ -312,6 +405,7 @@ export default function Rooms() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="hidden md:block">
+
           <div className="rounded-lg bg-[#7a0d26]/10 p-4 border border-[#7a0d26]/20">
             <h3 className="font-semibold text-[#7a0d26]">Filtros</h3>
             <div className="mt-3 space-y-2">
@@ -323,13 +417,39 @@ export default function Rooms() {
               </button>
             </div>
           </div>
+
+          <CapacityFilterSection 
+            capacityFilter={capacityFilter}
+            onCapacityFilterChange={handleCapacityFilterChange}
+            onApplyFilter={handleApplyFilter}
+            onClearFilter={handleClearFilter}
+          />
+
         </aside>
 
         <main>
           <div>
             <ReturnButton />
+
+            
+            {/* Indicador de filtro activo */}
+            {isFilterApplied && capacityFilter && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Mostrando cuartos con capacidad exacta de: <strong>{capacityFilter} personas</strong>
+                  <button 
+                    onClick={handleClearFilter}
+                    className="ml-2 text-blue-600 hover:text-blue-800 underline text-xs"
+                  >
+                    (mostrar todos)
+                  </button>
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {rooms.map((room) => (
+              {filteredRooms.map((room) => (
+
                 <RoomCard
                   key={room.id}
                   room={room}
@@ -339,6 +459,23 @@ export default function Rooms() {
                 />
               ))}
             </div>
+
+
+            {/* Mensaje cuando no hay resultados */}
+            {isFilterApplied && filteredRooms.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-neutral-500">
+                  No se encontraron cuartos con capacidad exacta de {capacityFilter} personas.
+                </p>
+                <button 
+                  onClick={handleClearFilter}
+                  className="mt-2 text-[#7a0d26] hover:underline"
+                >
+                  Ver todos los cuartos
+                </button>
+              </div>
+            )}
+
           </div>
         </main>
       </div>

@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router";
+import { Routes, Route } from "react-router";
 import { NavigationProvider } from "./context/NavigationContext";
-import { AuthProvider } from "./context/AuthContext"
+// Quitar AuthProvider de aquí
 
 import Home from './pages/Home';
 import Login from "./pages/Login";
@@ -9,12 +9,8 @@ import Equipo from "./pages/Equipo";
 import Rooms from "./pages/Rooms";
 
 function App() {
-  
-
   return (
-     
-    <BrowserRouter>
-    <AuthProvider>
+
     <NavigationProvider>
       <Routes>
         <Route path="/Home" element={<Home />} />
@@ -23,11 +19,11 @@ function App() {
         <Route path="/Equipo" element={<Equipo />} />
         <Route path="/Rooms" element={<Rooms />} />
       </Routes>
-      </NavigationProvider>
-      </AuthProvider>
-    </BrowserRouter>
-     
+
+    </NavigationProvider>
+
   )
 }
 
-export default App
+export default App
+

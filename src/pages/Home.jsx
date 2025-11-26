@@ -1,17 +1,12 @@
 import { Link } from "react-router";
 import Header from "../Components/Header";
-
 import { useEffect, useState } from "react";
 
 export default function Home() {
 
-  // Estado para guardar el equipo
   const [equipment, setEquipment] = useState([]);
-
-  // Estado para guardar el equipo
   const [rooms, setRooms] = useState([]);
 
-  // Llamar al backend al cargar la página
   useEffect(() => {
     fetch("http://localhost:5000/api/equipment")
       .then(res => res.json())
@@ -24,65 +19,84 @@ export default function Home() {
       .then(res => res.json())
       .then(data => setRooms(data));
   }, []);
-  return (
-    <div style={{ textAlign: "center", marginTop: "4rem" }}>
 
-      {/*EN EL HEADEDR*/}
+  return (
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: `url('/src/assets/fondo.jpg')` }}
+    >
+      {/* HEADER */}
       <Header />
 
-      <div style={{ textAlign: "center", marginTop: "6rem" }}>
-        <h1>
-          Pagina : Home
+      <div className="text-center pt-24 pb-12">
+        
+        <h1 className="text-3xl font-bold mb-6 text-white">
+          BIENVENDIDOS
         </h1>
-        {/*EN EL MAIN*/}
-        <p>Ir a <Link to="/Equipo">Equipo</Link></p>
-        <p>Ir a <Link to="/Rooms">Rooms</Link></p>
 
-        {/* LISTA DE EQUIPO AQUÍ DEBAJO */}
-        <h2 style={{ marginTop: "3rem" }}>Equipo Disponible</h2>
+        {/* BOTONES MODIFICADOS */}
+        <div className="flex flex-col items-center gap-6 mb-10">
+          <Link
+            to="/Equipo"
+            className="px-12 py-6 bg-[#8A1538] text-white rounded-2xl hover:bg-[#6a102a] transition-all shadow-lg text-xl font-semibold min-w-64 text-center"
+          >
+            Equipo
+          </Link>
 
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          marginTop: "1rem",
-          gap: "20px"
-        }}>
-          {equipment.map(item => (
-            <div key={item._id} style={{
-              border: "1px solid #ccc",
-              padding: "1rem",
-              width: "200px",
-              borderRadius: "8px"
-            }}>
-              <h3>{item.name}</h3>
-              <p>Tipo: {item.type}</p>
-              <p style={{ color: item.available ? "green" : "red" }}>
-                {item.available ? "Disponible" : "No disponible"}
-              </p>
-            </div>
-          ))}
+          <Link
+            to="/Rooms"
+            className="px-12 py-6 bg-[#8A1538] text-white rounded-2xl hover:bg-[#6a102a] transition-all shadow-lg text-xl font-semibold min-w-64 text-center"
+          >
+            Rooms
+          </Link>
         </div>
 
-        {/* LISTA DE CUARTOS AQUÍ DEBAJO */}
-        <h2 style={{ marginTop: "3rem" }}>Cuartos Disponibles</h2>
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          marginTop: "1rem",
-          gap: "20px"
-        }}>
-          {rooms.map(room => (
-            <div key={room._id} className="p-4 border rounded">
-              <h2>{room.name}</h2>
-              <p>Capacidad: {room.capacity}</p>
-              <p style={{ color: room.available ? "green" : "red" }}>
-                {room.available ? "Disponible" : "Ocupado"}
-              </p>
-            </div>
-          ))}
+        {/* LISTA EQUIPO */}
+        <div className="bg-white/90 backdrop-blur-sm mx-6 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-xl font-semibold mb-4">Equipo Disponible</h2>
+
+          <div className="flex justify-center flex-wrap gap-6">
+            {equipment.map(item => (
+              <div
+                key={item._id}
+                className="w-52 p-4 border rounded-xl shadow-sm bg-white"
+              >
+                <h3 className="text-lg font-bold">{item.name}</h3>
+                <p className="text-gray-600">Tipo: {item.type}</p>
+
+                <p
+                  className={`font-semibold mt-2 ${item.available ? "text-green-600" : "text-red-600"}`}
+                >
+                  {item.available ? "Disponible" : "No disponible"}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* LISTA ROOMS */}
+        <div className="bg-white/90 backdrop-blur-sm mx-6 rounded-2xl p-6 shadow-lg mt-8">
+          <h2 className="text-xl font-semibold mb-4">Cuartos Disponibles</h2>
+
+          <div className="flex justify-center flex-wrap gap-6">
+            {rooms.map(room => (
+              <div
+                key={room._id}
+                className="w-52 p-4 border rounded-xl shadow-sm bg-white"
+              >
+                <h3 className="text-lg font-bold">{room.name}</h3>
+                <p className="text-gray-600">Capacidad: {room.capacity}</p>
+
+                <p
+                  className={`font-semibold mt-2 ${room.available ? "text-green-600" : "text-red-600"}`}
+                >
+                  {room.available ? "Disponible" : "Ocupado"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
