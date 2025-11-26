@@ -1,5 +1,5 @@
 // src/pages/Equipo.jsx
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import ReturnButton from "../Components/ReturnButton";
 
 function TeamCard({ team, selected, disabledAdd, onToggle }) {
@@ -19,9 +19,22 @@ function TeamCard({ team, selected, disabledAdd, onToggle }) {
             <div className="inline-block px-3 py-1 rounded-md bg-white/80 text-[#7a0d26] font-semibold tracking-wide">
               {team.name}
             </div>
-            <div className="mt-3 space-y-1 text-sm text-neutral-600">
-              <div className="h-3 w-40 bg-white/70 rounded" />
-              <div className="h-3 w-48 bg-white/70 rounded" />
+
+            {/* Info real del backend */}
+            <div className="mt-3 space-y-1 text-sm text-neutral-700">
+              {team.type && (
+                <p>
+                  <span className="font-medium">Tipo:</span> {team.type}
+                </p>
+              )}
+              {"available" in team && (
+                <p>
+                  <span className="font-medium">Estado:</span>{" "}
+                  <span className={team.available ? "text-green-700" : "text-red-700"}>
+                    {team.available ? "Disponible" : "No disponible"}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -76,7 +89,19 @@ function SelectionPreviewModal({ open, onClose, selectedTeams, onSendRequest }) 
                   <div className="px-2 py-1 inline-block rounded bg-white text-[#7a0d26] font-medium">
                     {team.name}
                   </div>
-                  <div className="mt-2 h-3 w-40 bg-white/70 rounded" />
+                  {team.type && (
+                    <p className="mt-2 text-sm text-neutral-700">
+                      <span className="font-medium">Tipo:</span> {team.type}
+                    </p>
+                  )}
+                  {"available" in team && (
+                    <p className="text-sm text-neutral-700">
+                      <span className="font-medium">Estado:</span>{" "}
+                      <span className={team.available ? "text-green-700" : "text-red-700"}>
+                        {team.available ? "Disponible" : "No disponible"}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -188,17 +213,88 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
   );
 }
 
+// Componente de filtros
+function FilterSection({ filters, onFilterChange, onApplyFilter }) {
+  const filterOptions = ["Cámara", "Luz", "Micrófono", "Altavoz"];
+
+  const handleFilterToggle = (filter) => {
+    onFilterChange(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    );
+  };
+
+  return (
+    <div className="rounded-lg bg-[#7a0d26]/10 p-4 border border-[#7a0d26]/20">
+      <h3 className="font-semibold text-[#7a0d26] mb-4">Filtros por Tipo</h3>
+      <div className="space-y-3">
+        {filterOptions.map((option) => (
+          <label key={option} className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filters.includes(option)}
+              onChange={() => handleFilterToggle(option)}
+              className="w-4 h-4 text-[#7a0d26] border-neutral-300 rounded focus:ring-[#7a0d26]"
+            />
+            <span className="text-sm text-neutral-700 font-medium">{option}</span>
+          </label>
+        ))}
+      </div>
+      <button 
+        onClick={onApplyFilter}
+        className="mt-4 w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d] transition-colors"
+      >
+        Aplicar filtro
+      </button>
+      {filters.length > 0 && (
+        <button 
+          onClick={() => onFilterChange([])}
+          className="mt-2 w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2 hover:bg-[#7a0d26]/5 transition-colors"
+        >
+          Limpiar filtros
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Equipo() {
   const maxSelection = 6;
 
+  // ✅ Equipos desde el backend
+  const [equipment, setEquipment] = useState([]);
+  const [activeFilters, setActiveFilters] = useState([]);
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/equipment")
+      .then((res) => res.json())
+      .then((data) => setEquipment(data))
+      .catch((err) => console.error("Error al obtener equipo:", err));
+  }, []);
+
+  // Adaptamos los datos del backend a la estructura usada en la UI
   const teams = useMemo(
     () =>
-      Array.from({ length: 6 }).map((_, i) => ({
-        id: String(i + 1),
-        name: `EQUIPO ${i + 1}`,
+      equipment.map((item) => ({
+        id: item._id,          // usamos _id como id interno
+        name: item.name,
+        type: item.type,
+        available: item.available,
       })),
-    []
+    [equipment]
   );
+
+  // Filtrar equipos según los filtros activos
+  const filteredTeams = useMemo(() => {
+    if (!isFilterApplied || activeFilters.length === 0) {
+      return teams;
+    }
+    return teams.filter(team => 
+      team.type && activeFilters.includes(team.type)
+    );
+  }, [teams, activeFilters, isFilterApplied]);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -207,6 +303,7 @@ export default function Equipo() {
 
   const isSelected = useCallback((id) => selectedIds.includes(id), [selectedIds]);
   const canAddMore = selectedIds.length < maxSelection;
+
   const toggle = (id) => {
     setSelectedIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
@@ -217,6 +314,18 @@ export default function Equipo() {
 
   const selectedTeams = teams.filter((t) => selectedIds.includes(t.id));
 
+  const handleApplyFilter = () => {
+    setIsFilterApplied(true);
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setActiveFilters(newFilters);
+    // Si se limpian los filtros, también quitamos el filtro aplicado
+    if (newFilters.length === 0) {
+      setIsFilterApplied(false);
+    }
+  };
+
   const handleSendFromPreview = () => {
     setPreviewOpen(false);
     setRequestOpen(true);
@@ -225,6 +334,9 @@ export default function Equipo() {
   const submitRequest = async ({ name, reason }) => {
     try {
       setSending(true);
+      // Aquí podrías hacer un POST real al backend si quieres
+      // await fetch("http://localhost:5000/api/solicitudes", { ... })
+
       await new Promise((r) => setTimeout(r, 800)); // simulación
       alert(`Solicitud enviada!\nEquipos: ${selectedIds.join(", ")}`);
       setRequestOpen(false);
@@ -251,24 +363,37 @@ export default function Equipo() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="hidden md:block">
-          <div className="rounded-lg bg-[#7a0d26]/10 p-4 border border-[#7a0d26]/20">
-            <h3 className="font-semibold text-[#7a0d26]">Filtros</h3>
-            <div className="mt-3 space-y-2">
-              <div className="h-3 w-40 bg-white rounded" />
-              <div className="h-3 w-36 bg-white rounded" />
-              <div className="h-3 w-44 bg-white rounded" />
-              <button className="mt-4 w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d]">
-                Aplicar filtro
-              </button>
-            </div>
-          </div>
+          <FilterSection 
+            filters={activeFilters}
+            onFilterChange={handleFilterChange}
+            onApplyFilter={handleApplyFilter}
+          />
         </aside>
 
         <main>
           <div>
             <ReturnButton />
+            
+            {/* Indicador de filtros activos */}
+            {isFilterApplied && activeFilters.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Mostrando equipos de tipo: <strong>{activeFilters.join(", ")}</strong>
+                  <button 
+                    onClick={() => {
+                      setActiveFilters([]);
+                      setIsFilterApplied(false);
+                    }}
+                    className="ml-2 text-blue-600 hover:text-blue-800 underline text-xs"
+                  >
+                    (mostrar todos)
+                  </button>
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {teams.map((team) => (
+              {filteredTeams.map((team) => (
                 <TeamCard
                   key={team.id}
                   team={team}
@@ -278,6 +403,22 @@ export default function Equipo() {
                 />
               ))}
             </div>
+
+            {/* Mensaje cuando no hay resultados */}
+            {isFilterApplied && filteredTeams.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-neutral-500">No se encontraron equipos con los filtros seleccionados.</p>
+                <button 
+                  onClick={() => {
+                    setActiveFilters([]);
+                    setIsFilterApplied(false);
+                  }}
+                  className="mt-2 text-[#7a0d26] hover:underline"
+                >
+                  Ver todos los equipos
+                </button>
+              </div>
+            )}
           </div>
         </main>
       </div>
