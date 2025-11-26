@@ -10,6 +10,7 @@ import Rooms from "./pages/Rooms";
 
 function App() {
   return (
+
     <NavigationProvider>
       <Routes>
         <Route path="/Home" element={<Home />} />
@@ -19,6 +20,7 @@ function App() {
         <Route path="/Rooms" element={<Rooms />} />
       </Routes>
     </NavigationProvider>
+
   )
 }
 
