@@ -1,8 +1,8 @@
 // src/pages/Rooms.jsx
-
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useAuth } from "../context/AuthContext.jsx";   // ⬅️ AGREGADO
+import { useAuth } from "../context/AuthContext.jsx";
 import ReturnButton from "../Components/ReturnButton";
+import axios from "axios";
 
 function RoomCard({ room, selected, disabledAdd, onToggle }) {
   return (
@@ -25,7 +25,12 @@ function RoomCard({ room, selected, disabledAdd, onToggle }) {
             <div className="mt-3 space-y-1 text-sm text-neutral-700">
               {"capacity" in room && (
                 <p>
-                  <span className="font-medium">Capacidad:</span> {room.capacity}
+                  <span className="font-medium">Capacidad:</span> {room.capacity} personas
+                </p>
+              )}
+              {room.description && (
+                <p>
+                  <span className="font-medium">Descripción:</span> {room.description}
                 </p>
               )}
               {"available" in room && (
@@ -93,7 +98,12 @@ function SelectionPreviewModal({ open, onClose, selectedRooms, onSendRequest }) 
                   </div>
                   {"capacity" in room && (
                     <p className="mt-2 text-sm text-neutral-700">
-                      <span className="font-medium">Capacidad:</span> {room.capacity}
+                      <span className="font-medium">Capacidad:</span> {room.capacity} personas
+                    </p>
+                  )}
+                  {room.description && (
+                    <p className="text-sm text-neutral-700">
+                      <span className="font-medium">Descripción:</span> {room.description}
                     </p>
                   )}
                   {"available" in room && (
@@ -135,6 +145,9 @@ function SelectionPreviewModal({ open, onClose, selectedRooms, onSendRequest }) 
 function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = false }) {
   const [name, setName] = useState("");
   const [reason, setReason] = useState("");
+  const [day, setDay] = useState("");
+  const [startHour, setStartHour] = useState("");
+  const [endHour, setEndHour] = useState("");
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -145,6 +158,10 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
     if (selectedCount === 0) e.selection = "No hay cuartos seleccionados.";
     if (!name || name.trim().length < 2) e.name = "Ingresa un nombre válido.";
     if (!reason || reason.trim().length < 10) e.reason = "Agrega un motivo breve (mín. 10 caracteres).";
+    if (!day) e.day = "Selecciona el día.";
+    if (!startHour) e.startHour = "Selecciona la hora de inicio.";
+    if (!endHour) e.endHour = "Selecciona la hora de fin.";
+    if (startHour && endHour && startHour >= endHour) e.hours = "La hora de fin debe ser posterior a la de inicio.";
     if (!terms) e.terms = "Debes aceptar los términos.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -153,7 +170,13 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
   const handleSubmit = (ev) => {
     ev.preventDefault();
     if (!validate()) return;
-    onSubmit?.({ name: name.trim(), reason: reason.trim() });
+    onSubmit?.({ 
+      name: name.trim(), 
+      reason: reason.trim(),
+      day,
+      startHour,
+      endHour
+    });
   };
 
   return (
@@ -174,7 +197,7 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
           <label className="block">
             <span className="text-sm text-[#7a0d26] font-medium">Nombre</span>
             <input
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Tu nombre completo"
@@ -182,10 +205,49 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
             {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
           </label>
 
+          {/* Campos de fecha y hora para salas */}
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-sm text-[#7a0d26] font-medium">Día</span>
+              <input
+                type="date"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+              />
+              {errors.day && <span className="text-xs text-red-600">{errors.day}</span>}
+            </label>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <span className="text-sm text-[#7a0d26] font-medium">Hora inicio</span>
+                <input
+                  type="time"
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+                  value={startHour}
+                  onChange={(e) => setStartHour(e.target.value)}
+                />
+                {errors.startHour && <span className="text-xs text-red-600">{errors.startHour}</span>}
+              </label>
+
+              <label className="block">
+                <span className="text-sm text-[#7a0d26] font-medium">Hora fin</span>
+                <input
+                  type="time"
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+                  value={endHour}
+                  onChange={(e) => setEndHour(e.target.value)}
+                />
+                {errors.endHour && <span className="text-xs text-red-600">{errors.endHour}</span>}
+              </label>
+            </div>
+            {errors.hours && <span className="text-xs text-red-600">{errors.hours}</span>}
+          </div>
+
           <label className="block">
             <span className="text-sm text-[#7a0d26] font-medium">Motivo</span>
             <textarea
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 min-h-[110px]"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 min-h-[110px] focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="¿Por qué necesitas estos cuartos?"
@@ -201,13 +263,13 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md border border-neutral-300 text-neutral-700">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50">
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-md bg-[#7a0d26] text-white"
+            className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d] disabled:opacity-60"
           >
             {isSubmitting ? "Enviando..." : "Enviar solicitud"}
           </button>
@@ -238,7 +300,7 @@ function CapacityFilterSection({ capacityFilter, onCapacityFilterChange, onApply
           value={capacityFilter}
           onChange={handleCapacityChange}
           placeholder="Ej: 10"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
         />
       </label>
 
@@ -246,7 +308,7 @@ function CapacityFilterSection({ capacityFilter, onCapacityFilterChange, onApply
         <button 
           onClick={onApplyFilter}
           disabled={!capacityFilter}
-          className="w-full rounded-md bg-[#7a0d26] text-white py-2 disabled:opacity-50"
+          className="w-full rounded-md bg-[#7a0d26] text-white py-2 hover:bg-[#5d0a1d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Aplicar filtro
         </button>
@@ -254,7 +316,7 @@ function CapacityFilterSection({ capacityFilter, onCapacityFilterChange, onApply
         {capacityFilter && (
           <button 
             onClick={onClearFilter}
-            className="w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2"
+            className="w-full rounded-md border border-[#7a0d26] text-[#7a0d26] py-2 hover:bg-[#7a0d26]/5 transition-colors"
           >
             Limpiar filtro
           </button>
@@ -264,20 +326,164 @@ function CapacityFilterSection({ capacityFilter, onCapacityFilterChange, onApply
   );
 }
 
+// Nuevo componente para agregar salas (solo para admin)
+function AddRoomModal({ open, onClose, onSubmit, isSubmitting = false }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    capacity: "",
+    description: "",
+    available: true
+  });
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (open) {
+      setFormData({ name: "", capacity: "", description: "", available: true });
+      setErrors({});
+    }
+  }, [open]);
+
+  const validate = () => {
+    const e = {};
+    if (!formData.name || formData.name.trim().length < 2) {
+      e.name = "El nombre debe tener al menos 2 caracteres";
+    }
+    if (!formData.capacity || !/^\d+$/.test(formData.capacity)) {
+      e.capacity = "La capacidad debe ser un número válido";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = (ev) => {
+    ev.preventDefault();
+    if (!validate()) return;
+    
+    const submitData = {
+      ...formData,
+      capacity: parseInt(formData.capacity),
+    };
+    
+    onSubmit?.(submitData);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <form className="relative w-[min(500px,92vw)] rounded-lg bg-white p-6 shadow-xl" onSubmit={handleSubmit}>
+        <div className="flex items-start justify-between">
+          <h2 className="text-2xl font-semibold tracking-wide text-[#7a0d26]">Agregar Nueva Sala</h2>
+          <button type="button" onClick={onClose} className="text-2xl text-neutral-500 hover:text-neutral-700">
+            ×
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <label className="block">
+            <span className="text-sm text-[#7a0d26] font-medium">Nombre de la Sala *</span>
+            <input
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Ej: Sala de Conferencias A"
+            />
+            {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-[#7a0d26] font-medium">Capacidad *</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+              value={formData.capacity}
+              onChange={(e) => handleChange("capacity", e.target.value)}
+              placeholder="Ej: 20"
+            />
+            {errors.capacity && <span className="text-xs text-red-600">{errors.capacity}</span>}
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-[#7a0d26] font-medium">Descripción (opcional)</span>
+            <textarea
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+              value={formData.description}
+              onChange={(e) => handleChange("description", e.target.value)}
+              placeholder="Ej: Sala equipada con proyector y sistema de audio"
+              rows={3}
+            />
+          </label>
+
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={formData.available}
+              onChange={(e) => handleChange("available", e.target.checked)}
+              className="w-4 h-4 text-[#7a0d26] border-neutral-300 rounded focus:ring-[#7a0d26]"
+            />
+            <span className="text-sm text-neutral-700">Sala disponible</span>
+          </label>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button 
+            type="button" 
+            onClick={onClose}
+            className="px-4 py-2 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d] disabled:opacity-60"
+          >
+            {isSubmitting ? "Agregando..." : "Agregar Sala"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function Rooms() {
+  const { role } = useAuth();
   const maxSelection = 6;
-  const { role } = useAuth();   // ⬅️ ROL OBTENIDO AQUÍ
 
   const [roomsData, setRoomsData] = useState([]);
   const [capacityFilter, setCapacityFilter] = useState("");
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+  
+  // Estados para el modal de agregar sala
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addingRoom, setAddingRoom] = useState(false);
 
   useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = () => {
     fetch("http://localhost:5000/api/rooms")
       .then((res) => res.json())
       .then((data) => setRoomsData(data))
       .catch((err) => console.error("Error al obtener rooms:", err));
-  }, []);
+  };
 
   const rooms = useMemo(
     () =>
@@ -285,6 +491,7 @@ export default function Rooms() {
         id: room._id,
         name: room.name,
         capacity: room.capacity,
+        description: room.description,
         available: room.available,
       })),
     [roomsData]
@@ -328,7 +535,9 @@ export default function Rooms() {
 
   const handleCapacityFilterChange = (newCapacity) => {
     setCapacityFilter(newCapacity);
-    if (!newCapacity) setIsFilterApplied(false);
+    if (!newCapacity) {
+      setIsFilterApplied(false);
+    }
   };
 
   const handleSendFromPreview = () => {
@@ -336,10 +545,31 @@ export default function Rooms() {
     setRequestOpen(true);
   };
 
-  const submitRequest = async ({ name, reason }) => {
+  // Función para agregar nueva sala (solo admin)
+  const handleAddRoom = async (roomData) => {
+    try {
+      setAddingRoom(true);
+      
+      const response = await axios.post(
+        "http://localhost:5000/api/rooms", 
+        roomData
+      );
+      
+      setRoomsData(prev => [...prev, response.data]);
+      setAddModalOpen(false);
+      alert("¡Sala agregada exitosamente!");
+      
+    } catch (error) {
+      console.error("Error agregando sala:", error);
+      alert("Hubo un error al agregar la sala");
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
+  const submitRequest = async ({ name, reason, day, startHour, endHour }) => {
     try {
       setSending(true);
-
       const token = localStorage.getItem("token");
 
       for (const roomId of selectedIds) {
@@ -352,18 +582,18 @@ export default function Rooms() {
           body: JSON.stringify({
             resourceType: "room",
             resourceId: roomId,
-            day: "2025-11-26",
-            startHour: "14:00",
-            endHour: "16:00",
+            day: day,
+            startHour: startHour,
+            endHour: endHour,
           }),
         });
       }
 
-      alert(`Solicitud enviada!\nCuartos: ${selectedIds.join(", ")}`);
+      alert("¡Solicitud enviada exitosamente!");
       setRequestOpen(false);
     } catch (e) {
       console.error(e);
-      alert("Hubo un error al enviar la solicitud.");
+      alert("Hubo un error al enviar la solicitud de reserva de cuarto.");
     } finally {
       setSending(false);
     }
@@ -390,63 +620,79 @@ export default function Rooms() {
             onApplyFilter={handleApplyFilter}
             onClearFilter={handleClearFilter}
           />
+          
+          {/* Botón para agregar sala (solo visible para admin) */}
+          {role === "admin" && (
+            <div className="mt-6 rounded-lg bg-[#8A1538] p-4 border border-[#8A1538] shadow-md">
+              <h3 className="font-semibold text-white mb-3">Panel de Administrador</h3>
+              <button
+                onClick={() => setAddModalOpen(true)}
+                className="w-full rounded-md bg-white text-[#8A1538] py-2 hover:bg-gray-100 transition-colors font-medium"
+              >
+                + Agregar Sala
+              </button>
+            </div>
+          )}
         </aside>
 
         <main>
-          <ReturnButton />
+          <div>
+            <ReturnButton />
 
-          {/*BOTÓN ESPECIAL SOLO PARA ADMIN */}
-          {role === "admin" && (
-            <div className="mb-6">
-              <button
-                onClick={() => console.log("Agregar nuevo cuarto")}
-                className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d]"
-              >
-                ➕ Agregar nuevo cuarto
-              </button>
+            {/* Botón agregar sala para móvil (solo admin) */}
+            {role === "admin" && (
+              <div className="md:hidden mb-4 rounded-lg bg-[#8A1538] p-4 border border-[#8A1538] shadow-md">
+                <button
+                  onClick={() => setAddModalOpen(true)}
+                  className="w-full rounded-md bg-white text-[#8A1538] py-2 hover:bg-gray-100 transition-colors font-medium"
+                >
+                  + Agregar Sala
+                </button>
+              </div>
+            )}
+
+            {/* Indicador de filtro activo */}
+            {isFilterApplied && capacityFilter && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Mostrando cuartos con capacidad exacta de: <strong>{capacityFilter} personas</strong>
+                  <button 
+                    onClick={handleClearFilter}
+                    className="ml-2 text-blue-600 hover:text-blue-800 underline text-xs"
+                  >
+                    (mostrar todos)
+                  </button>
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {filteredRooms.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  selected={isSelected(room.id)}
+                  disabledAdd={!isSelected(room.id) && !canAddMore}
+                  onToggle={toggle}
+                />
+              ))}
             </div>
-          )}
 
-          {isFilterApplied && capacityFilter && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                Mostrando cuartos con capacidad exacta de: <strong>{capacityFilter}</strong>
+            {/* Mensaje cuando no hay resultados */}
+            {isFilterApplied && filteredRooms.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-neutral-500">
+                  No se encontraron cuartos con capacidad exacta de {capacityFilter} personas.
+                </p>
                 <button 
                   onClick={handleClearFilter}
-                  className="ml-2 text-blue-600 hover:text-blue-800 underline text-xs"
+                  className="mt-2 text-[#7a0d26] hover:underline"
                 >
-                  (mostrar todos)
+                  Ver todos los cuartos
                 </button>
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {filteredRooms.map((room) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                selected={isSelected(room.id)}
-                disabledAdd={!isSelected(room.id) && !canAddMore}
-                onToggle={toggle}
-              />
-            ))}
+              </div>
+            )}
           </div>
-
-          {isFilterApplied && filteredRooms.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-neutral-500">
-                No se encontraron cuartos con capacidad de {capacityFilter}.
-              </p>
-              <button 
-                onClick={handleClearFilter}
-                className="mt-2 text-[#7a0d26] hover:underline"
-              >
-                Ver todos los cuartos
-              </button>
-            </div>
-          )}
-
         </main>
       </div>
 
@@ -463,6 +709,14 @@ export default function Rooms() {
         onSubmit={submitRequest}
         selectedCount={selectedIds.length}
         isSubmitting={sending}
+      />
+      
+      {/* Modal para agregar sala (solo para admin) */}
+      <AddRoomModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleAddRoom}
+        isSubmitting={addingRoom}
       />
     </div>
   );

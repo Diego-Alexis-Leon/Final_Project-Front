@@ -2,6 +2,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx"; 
 import ReturnButton from "../Components/ReturnButton";
+import axios from "axios";
 
 function TeamCard({ team, selected, disabledAdd, onToggle }) {
   return (
@@ -132,6 +133,8 @@ function SelectionPreviewModal({ open, onClose, selectedTeams, onSendRequest }) 
 function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = false }) {
   const [name, setName] = useState("");
   const [reason, setReason] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -142,6 +145,9 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
     if (selectedCount === 0) e.selection = "No hay equipos seleccionados.";
     if (!name || name.trim().length < 2) e.name = "Ingresa un nombre válido.";
     if (!reason || reason.trim().length < 10) e.reason = "Agrega un motivo breve (mín. 10 caracteres).";
+    if (!startDate) e.startDate = "Selecciona la fecha de inicio.";
+    if (!endDate) e.endDate = "Selecciona la fecha de fin.";
+    if (startDate && endDate && startDate > endDate) e.dates = "La fecha de fin debe ser posterior a la de inicio.";
     if (!terms) e.terms = "Debes aceptar los términos.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -150,7 +156,12 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
   const handleSubmit = (ev) => {
     ev.preventDefault();
     if (!validate()) return;
-    onSubmit?.({ name: name.trim(), reason: reason.trim() });
+    onSubmit?.({ 
+      name: name.trim(), 
+      reason: reason.trim(),
+      startDate,
+      endDate
+    });
   };
 
   return (
@@ -177,6 +188,32 @@ function RequestModal({ open, onClose, onSubmit, selectedCount, isSubmitting = f
             />
             {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
           </label>
+
+          {/* Campos de fecha para equipos */}
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <span className="text-sm text-[#7a0d26] font-medium">Fecha inicio</span>
+              <input
+                type="date"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              {errors.startDate && <span className="text-xs text-red-600">{errors.startDate}</span>}
+            </label>
+
+            <label className="block">
+              <span className="text-sm text-[#7a0d26] font-medium">Fecha fin</span>
+              <input
+                type="date"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+              {errors.endDate && <span className="text-xs text-red-600">{errors.endDate}</span>}
+            </label>
+          </div>
+          {errors.dates && <span className="text-xs text-red-600">{errors.dates}</span>}
 
           <label className="block">
             <span className="text-sm text-[#7a0d26] font-medium">Motivo</span>
@@ -258,21 +295,149 @@ function FilterSection({ filters, onFilterChange, onApplyFilter }) {
   );
 }
 
+// Nuevo componente para agregar equipos (solo para admin)
+function AddEquipmentModal({ open, onClose, onSubmit, isSubmitting = false }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "",
+    available: true
+  });
+  const [errors, setErrors] = useState({});
+
+  const equipmentTypes = ["Cámara", "Luz", "Micrófono", "Altavoz"];
+
+  useEffect(() => {
+    if (open) {
+      setFormData({ name: "", type: "", available: true });
+      setErrors({});
+    }
+  }, [open]);
+
+  const validate = () => {
+    const e = {};
+    if (!formData.name || formData.name.trim().length < 2) {
+      e.name = "El nombre debe tener al menos 2 caracteres";
+    }
+    if (!formData.type) {
+      e.type = "Selecciona un tipo de equipo";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = (ev) => {
+    ev.preventDefault();
+    if (!validate()) return;
+    onSubmit?.(formData);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <form className="relative w-[min(500px,92vw)] rounded-lg bg-white p-6 shadow-xl" onSubmit={handleSubmit}>
+        <div className="flex items-start justify-between">
+          <h2 className="text-2xl font-semibold tracking-wide text-[#7a0d26]">Agregar Nuevo Equipo</h2>
+          <button type="button" onClick={onClose} className="text-2xl text-neutral-500 hover:text-neutral-700">
+            ×
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <label className="block">
+            <span className="text-sm text-[#7a0d26] font-medium">Nombre del Equipo *</span>
+            <input
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Ej: Cámara Sony A7III"
+            />
+            {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-[#7a0d26] font-medium">Tipo de Equipo *</span>
+            <select
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#7a0d26]"
+              value={formData.type}
+              onChange={(e) => handleChange("type", e.target.value)}
+            >
+              <option value="">Selecciona un tipo</option>
+              {equipmentTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            {errors.type && <span className="text-xs text-red-600">{errors.type}</span>}
+          </label>
+
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={formData.available}
+              onChange={(e) => handleChange("available", e.target.checked)}
+              className="w-4 h-4 text-[#7a0d26] border-neutral-300 rounded focus:ring-[#7a0d26]"
+            />
+            <span className="text-sm text-neutral-700">Equipo disponible</span>
+          </label>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button 
+            type="button" 
+            onClick={onClose}
+            className="px-4 py-2 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d] disabled:opacity-60"
+          >
+            {isSubmitting ? "Agregando..." : "Agregar Equipo"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function Equipo() {
-  const { role } = useAuth();  // ⬅️ AQUI SE ARREGLÓ
+  const { role } = useAuth();
   const maxSelection = 6;
 
   const [equipment, setEquipment] = useState([]);
-
   const [activeFilters, setActiveFilters] = useState([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+  
+  // Estados para el modal de agregar equipo
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addingEquipment, setAddingEquipment] = useState(false);
 
   useEffect(() => {
+    fetchEquipment();
+  }, []);
+
+  const fetchEquipment = () => {
     fetch("http://localhost:5000/api/equipment")
       .then((res) => res.json())
       .then((data) => setEquipment(data))
       .catch((err) => console.error("Error al obtener equipo:", err));
-  }, []);
+  };
 
   const teams = useMemo(
     () =>
@@ -328,17 +493,61 @@ export default function Equipo() {
     setRequestOpen(true);
   };
 
-  const submitRequest = async ({ name, reason }) => {
+  // Función para agregar nuevo equipo (solo admin)
+  const handleAddEquipment = async (equipmentData) => {
+    try {
+      setAddingEquipment(true);
+      
+      const response = await axios.post(
+        "http://localhost:5000/api/equipment", 
+        equipmentData
+      );
+      
+      setEquipment(prev => [...prev, response.data]);
+      setAddModalOpen(false);
+      alert("¡Equipo agregado exitosamente!");
+      
+    } catch (error) {
+      console.error("Error agregando equipo:", error);
+      alert("Hubo un error al agregar el equipo");
+    } finally {
+      setAddingEquipment(false);
+    }
+  };
+
+  const submitRequest = async ({ name, reason, startDate, endDate }) => {
     try {
       setSending(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Debes iniciar sesión para reservar.");
+        return;
+      }
 
-      await new Promise((r) => setTimeout(r, 800));
+      for (const equipmentId of selectedIds) {
+        const team = selectedTeams.find(t => t.id === equipmentId);
+        await axios.post(
+          "http://localhost:5000/api/reservations",
+          {
+            resourceType: team.type,
+            resourceId: equipmentId,
+            startDate: startDate,
+            endDate: endDate
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
 
-      alert(`Solicitud enviada!\nEquipos: ${selectedIds.join(", ")}`);
+      alert("¡Reservas creadas exitosamente!");
       setRequestOpen(false);
-    } catch (e) {
-      console.error(e);
-      alert("Hubo un error al enviar la solicitud.");
+      setSelectedIds([]);
+    } catch (error) {
+      console.error("Error creando reservas:", error);
+      alert("Hubo un error y no se pudieron crear las reservas.");
     } finally {
       setSending(false);
     }
@@ -364,12 +573,38 @@ export default function Equipo() {
             onFilterChange={handleFilterChange}
             onApplyFilter={handleApplyFilter}
           />
+          
+          {/* Botón para agregar equipo (solo visible para admin) */}
+          {role === "admin" && (
+            <div className="mt-6 rounded-lg bg-[#8A1538] p-4 border border-[#8A1538] shadow-md">
+              <h3 className="font-semibold text-white mb-3">Panel de Administrador</h3>
+              <button
+                onClick={() => setAddModalOpen(true)}
+                className="w-full rounded-md bg-white text-[#8A1538] py-2 hover:bg-gray-100 transition-colors font-medium"
+              >
+                + Agregar Equipo
+              </button>
+            </div>
+          )}
         </aside>
 
         <main>
           <div>
             <ReturnButton />
 
+            {/* Botón agregar equipo para móvil (solo admin) */}
+            {role === "admin" && (
+              <div className="md:hidden mb-4 rounded-lg bg-[#8A1538] p-4 border border-[#8A1538] shadow-md">
+                <button
+                  onClick={() => setAddModalOpen(true)}
+                  className="w-full rounded-md bg-white text-[#8A1538] py-2 hover:bg-gray-100 transition-colors font-medium"
+                >
+                  + Agregar Equipo
+                </button>
+              </div>
+            )}
+
+            {/* Indicador de filtros activos */}
             {isFilterApplied && activeFilters.length > 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
@@ -384,18 +619,6 @@ export default function Equipo() {
                     (mostrar todos)
                   </button>
                 </p>
-              </div>
-            )}
-
-            {/* BOTÓN SOLO PARA ADMIN */}
-            {role === "admin" && (
-              <div className="mb-6">
-                <button
-                  onClick={() => console.log("Agregar nuevo cuarto")}
-                  className="px-4 py-2 rounded-md bg-[#7a0d26] text-white hover:bg-[#5d0a1d]"
-                >
-                  ➕ Agregar nuevo cuarto
-                </button>
               </div>
             )}
 
@@ -441,6 +664,14 @@ export default function Equipo() {
         onSubmit={submitRequest}
         selectedCount={selectedIds.length}
         isSubmitting={sending}
+      />
+      
+      {/* Modal para agregar equipo (solo para admin) */}
+      <AddEquipmentModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleAddEquipment}
+        isSubmitting={addingEquipment}
       />
     </div>
   );
